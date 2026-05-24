@@ -1,0 +1,153 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  continuous-integration:
+    name: CI Pipeline
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Create frontend env file
+        run: |
+          cat <<'EOF' > apps/frontend/.env.production
+          ${{ secrets.FRONTEND_ENV_FILE }}
+          EOF
+
+      - name: Install backend dependencies
+        working-directory: apps/backend
+        run: npm install
+
+      - name: Validate backend lint
+        working-directory: apps/backend
+        run: npm run lint
+
+      - name: Run backend tests
+        working-directory: apps/backend
+        run: npm run test
+
+      - name: Build backend
+        working-directory: apps/backend
+        run: npm run build
+
+      - name: Install frontend dependencies
+        working-directory: apps/frontend
+        run: npm install
+
+      - name: Validate frontend lint
+        working-directory: apps/frontend
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: apps/frontend
+        run: npm run build
+
+      - name: Package deployment artifact
+        run: |
+          tar -czf deploy.tar.gz \
+            ecosystem.config.cjs \
+            apps/backend/package.json \
+            apps/backend/tsconfig.json \
+            apps/backend/tsconfig.build.json \
+            apps/backend/src \
+            apps/backend/dist \
+            apps/frontend/dist
+
+      - name: Upload deploy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: visite-melina-production-artifact
+          path: deploy.tar.gz
+
+  continuous-deployment:
+    name: CD Pipeline
+    runs-on: ubuntu-latest
+    needs: [continuous-integration]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Download deploy artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: visite-melina-production-artifact
+
+      - name: Copy artifact to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: deploy.tar.gz
+          target: /tmp
+
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            set -euo pipefail
+
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+
+            if command -v nvm >/dev/null 2>&1; then
+              nvm install 22
+              nvm use 22
+            fi
+
+            APP_DIR="/home/deploy/visite-melina"
+            TEMP_DIR="/tmp/visite-melina_tmp"
+            ARTIFACT="/tmp/deploy.tar.gz"
+            API_SERVICE="visite-melina-api"
+
+            mkdir -p "$APP_DIR"
+            mkdir -p "$TEMP_DIR"
+
+            rm -rf "$TEMP_DIR"/*
+            tar -xzf "$ARTIFACT" -C "$TEMP_DIR"
+
+            install -d "$APP_DIR/apps/backend" "$APP_DIR/apps/frontend"
+
+            cp "$TEMP_DIR/ecosystem.config.cjs" "$APP_DIR/ecosystem.config.cjs"
+            cp "$TEMP_DIR/apps/backend/package.json" "$APP_DIR/apps/backend/package.json"
+            cp "$TEMP_DIR/apps/backend/tsconfig.json" "$APP_DIR/apps/backend/tsconfig.json"
+            cp "$TEMP_DIR/apps/backend/tsconfig.build.json" "$APP_DIR/apps/backend/tsconfig.build.json"
+
+            rm -rf "$APP_DIR/apps/backend/dist" "$APP_DIR/apps/backend/src" "$APP_DIR/apps/frontend/dist"
+
+            cp -R "$TEMP_DIR/apps/backend/dist" "$APP_DIR/apps/backend/dist"
+            cp -R "$TEMP_DIR/apps/backend/src" "$APP_DIR/apps/backend/src"
+            cp -R "$TEMP_DIR/apps/frontend/dist" "$APP_DIR/apps/frontend/dist"
+
+            cat <<'EOF' > "$APP_DIR/apps/backend/.env"
+            ${{ secrets.API_ENV_FILE }}
+            EOF
+
+            cd "$APP_DIR/apps/backend"
+            npm install --omit=dev
+
+            API_PORT="$(grep '^PORT=' "$APP_DIR/apps/backend/.env" | tail -n 1 | cut -d '=' -f 2- | tr -d '\r')"
+            PORT="$API_PORT" pm2 startOrReload "$APP_DIR/ecosystem.config.cjs" --only "$API_SERVICE" --update-env
+            pm2 save
+
+            rm -f "$ARTIFACT"
+            rm -rf "$TEMP_DIR"

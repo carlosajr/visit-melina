@@ -1,0 +1,94 @@
+/* styles-responsive.css — adapta o app ao espaço disponível via container queries */
+
+.vm-app {
+  container-type: inline-size;
+  container-name: vmapp;
+}
+
+/* ─── TABLET / DESKTOP-SMALL (≥ 720px) ─────────────────────────── */
+@container vmapp (min-width: 720px) {
+  .vm-screen {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 48px 140px;
+    gap: 28px;
+  }
+  .vm-h1 { font-size: 40px; line-height: 1.08; }
+  .vm-h2 { font-size: 28px; }
+  .vm-lede { font-size: 17px; }
+  .vm-eyebrow { font-size: 12px; }
+
+  .vm-brand-text b { font-size: 22px; }
+  .vm-brand-text span { font-size: 12px; }
+
+  .vm-back { font-size: 14px; }
+
+  /* Botões de escolha ficam lado a lado */
+  .vm-screen > div:has(> .vm-choice) {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px !important;
+  }
+  .vm-choice { padding: 22px; }
+  .vm-choice-title { font-size: 18px; }
+  .vm-choice-sub { font-size: 14px; }
+  .vm-choice-icon { width: 52px; height: 52px; }
+
+  .vm-date-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .vm-step-footer {
+    justify-content: flex-end;
+  }
+  .vm-step-footer .vm-btn-block { flex: 0 1 auto; min-width: 220px; }
+  .vm-step-footer .vm-btn-secondary { flex: 0 0 auto; }
+
+  .vm-card { padding: 24px; }
+  .vm-progress { gap: 8px; }
+}
+
+/* ─── DESKTOP (≥ 1024px) ─────────────────────────────────────────── */
+@container vmapp (min-width: 1024px) {
+  .vm-screen {
+    max-width: 960px;
+    padding: 56px 64px 160px;
+    gap: 32px;
+  }
+  .vm-h1 { font-size: 48px; }
+  .vm-h2 { font-size: 32px; }
+  .vm-lede { font-size: 18px; max-width: 56ch; }
+
+  .vm-date-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .vm-choice {
+    padding: 26px;
+    gap: 18px;
+  }
+  .vm-choice-icon { width: 56px; height: 56px; border-radius: 14px; }
+  .vm-choice-title { font-size: 20px; }
+  .vm-choice-sub { font-size: 15px; }
+
+  .vm-sum-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 32px !important;
+  }
+}
+
+/* ─── DESKTOP LARGE (≥ 1280px) ───────────────────────────────────── */
+@container vmapp (min-width: 1280px) {
+  .vm-screen {
+    max-width: 1040px;
+  }
+}
+
+/* ─── Decoração de fundo no desktop ──────────────────────────────── */
+@container vmapp (min-width: 720px) {
+  .vm-app::before {
+    background: linear-gradient(180deg, var(--rose-softer) 0%, var(--bg) 22%);
+  }
+}

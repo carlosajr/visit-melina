@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Honey drip -->
+  <path d="M15 9 C15 7 15.5 5.5 16 4.5 C16.5 5.5 17 7 17 9" fill="#F5A623"/>
+  <!-- Neck/rim -->
+  <rect x="10.5" y="8" width="11" height="3.5" rx="1.75" fill="#B86E08"/>
+  <!-- Pot body -->
+  <path d="M7 11.5 L6.5 24.5 Q6.5 28 16 28 Q25.5 28 25.5 24.5 L25 11.5 Z" fill="#B86E08"/>
+  <!-- Honey fill inside -->
+  <path d="M8.5 12.5 L8 24 Q8 26.5 16 26.5 Q24 26.5 24 24 L23.5 12.5 Z" fill="#F5A623"/>
+  <!-- Side ear handles -->
+  <ellipse cx="6" cy="18" rx="1.5" ry="2" fill="#B86E08"/>
+  <ellipse cx="26" cy="18" rx="1.5" ry="2" fill="#B86E08"/>
+  <!-- Shine highlight -->
+  <ellipse cx="12" cy="20" rx="1.5" ry="3.5" fill="#FFD166" opacity="0.55"/>
+</svg>
