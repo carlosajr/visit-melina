@@ -11,7 +11,6 @@ import { StepSucesso } from './components/StepSucesso';
 import { MeuAgendamento } from './components/MeuAgendamento';
 import { PainelAdmin } from './components/PainelAdmin';
 import { useAgendamentos } from './hooks/useAgendamentos';
-import { setVisitorToken } from './api/client';
 
 const RASCUNHO_VAZIO = {
   tipo: '',

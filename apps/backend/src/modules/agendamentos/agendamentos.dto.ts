@@ -1,4 +1,12 @@
-import { IsArray, IsDateString, IsEmail, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsEmail,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 export class CreateAgendamentoDto {
   @IsDateString()

@@ -8,7 +8,7 @@ import {
 import { GerenciarSlots } from './GerenciarSlots';
 import { useAgendamentos } from '../hooks/useAgendamentos';
 import { formatarDataCurta, formatarHorario, diaSemana } from '../utils/datas';
-import { api, apiAdmin, setAdminToken, clearAdminToken, hasAdminToken, getAdminToken } from '../api/client';
+import { api, apiAdmin, setAdminToken, clearAdminToken, hasAdminToken } from '../api/client';
 
 export function PainelAdmin({ onVoltarHome }) {
   const { lista, carregarLista, cancelarAdmin } = useAgendamentos();
@@ -21,16 +21,17 @@ export function PainelAdmin({ onVoltarHome }) {
   const [googleStatus, setGoogleStatus] = useState(null); // { conectado, email }
 
   useEffect(() => {
-    // Detecta retorno do OAuth Google
     const params = new URLSearchParams(window.location.search);
     if (params.get('google_auth') === 'success') {
       window.history.replaceState({}, '', window.location.pathname);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTab('agendamentos');
     }
   }, []);
 
   useEffect(() => {
     if (autenticado) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCarregandoLista(true);
       carregarLista().finally(() => setCarregandoLista(false));
       apiAdmin('/google/status')

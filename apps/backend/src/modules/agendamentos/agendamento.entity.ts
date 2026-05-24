@@ -1,10 +1,22 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 export type TipoVisita = 'amigo' | 'familia';
 
 // Índices únicos parciais: apenas entre agendamentos não-cancelados
-@Index('IDX_ag_data_ativo', ['data'], { where: '"cancelado_em" IS NULL', unique: true })
-@Index('IDX_ag_whatsapp_digits_ativo', ['whatsappDigits'], { where: '"cancelado_em" IS NULL', unique: true })
+@Index('IDX_ag_data_ativo', ['data'], {
+  where: '"cancelado_em" IS NULL',
+  unique: true,
+})
+@Index('IDX_ag_whatsapp_digits_ativo', ['whatsappDigits'], {
+  where: '"cancelado_em" IS NULL',
+  unique: true,
+})
 @Entity('agendamentos')
 export class Agendamento {
   @PrimaryGeneratedColumn('uuid')

@@ -1,4 +1,4 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { google, calendar_v3 } from 'googleapis';
@@ -40,23 +40,32 @@ export class GoogleCalendarService {
       const oauth2 = google.oauth2({ version: 'v2', auth: client });
       const { data } = await oauth2.userinfo.get();
       email = data.email ?? '';
-    } catch (e) {
-      this.logger.warn(`Não foi possível obter email do Google: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.warn(
+        `Não foi possível obter email do Google: ${(e as Error).message}`,
+      );
     }
 
     await this.tokenRepo.save({
       id: 'admin',
       accessToken: tokens.access_token!,
-      refreshToken: tokens.refresh_token ?? (await this.tokenRepo.findOneBy({ id: 'admin' }))?.refreshToken ?? '',
+      refreshToken:
+        tokens.refresh_token ??
+        (await this.tokenRepo.findOneBy({ id: 'admin' }))?.refreshToken ??
+        '',
       expiresAt: new Date(tokens.expiry_date!),
       email,
     });
-    this.logger.log(`Google Calendar conectado: ${email || '(email não disponível)'}`);
+    this.logger.log(
+      `Google Calendar conectado: ${email || '(email não disponível)'}`,
+    );
   }
 
   async getStatus(): Promise<{ conectado: boolean; email?: string }> {
     const token = await this.tokenRepo.findOneBy({ id: 'admin' });
-    return token ? { conectado: true, email: token.email } : { conectado: false };
+    return token
+      ? { conectado: true, email: token.email }
+      : { conectado: false };
   }
 
   async createEvent(params: {
@@ -76,12 +85,18 @@ export class GoogleCalendarService {
     const event: calendar_v3.Schema$Event = {
       summary: params.titulo,
       description: params.descricao,
-      location: 'R. Recife, 616 - Planalto da Boa Esperança, João Pessoa - PB, 58065-006, Brasil',
+      location:
+        'R. Recife, 616 - Planalto da Boa Esperança, João Pessoa - PB, 58065-006, Brasil',
       colorId: '4', // Flamingo
       start: { dateTime: start, timeZone: 'America/Sao_Paulo' },
       end: { dateTime: end, timeZone: 'America/Sao_Paulo' },
-      attendees: params.convidadoEmail ? [{ email: params.convidadoEmail }] : [],
-      reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 60 }] },
+      attendees: params.convidadoEmail
+        ? [{ email: params.convidadoEmail }]
+        : [],
+      reminders: {
+        useDefault: false,
+        overrides: [{ method: 'popup', minutes: 60 }],
+      },
     };
 
     try {
@@ -91,8 +106,10 @@ export class GoogleCalendarService {
         sendNotifications: !!params.convidadoEmail,
       });
       return res.data.id ?? null;
-    } catch (e) {
-      this.logger.error(`Erro ao criar evento Google Calendar: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(
+        `Erro ao criar evento Google Calendar: ${(e as Error).message}`,
+      );
       return null;
     }
   }
@@ -103,8 +120,10 @@ export class GoogleCalendarService {
     const cal = google.calendar({ version: 'v3', auth: client });
     try {
       await cal.events.delete({ calendarId: this.calendarId, eventId });
-    } catch (e) {
-      this.logger.warn(`Erro ao cancelar evento ${eventId}: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.warn(
+        `Erro ao cancelar evento ${eventId}: ${(e as Error).message}`,
+      );
     }
   }
 
@@ -119,12 +138,11 @@ export class GoogleCalendarService {
       expiry_date: token.expiresAt.getTime(),
     });
 
-    // Atualiza token se expirou
-    client.on('tokens', async (tokens) => {
+    client.on('tokens', (tokens) => {
       if (tokens.access_token) {
         token.accessToken = tokens.access_token;
         token.expiresAt = new Date(tokens.expiry_date!);
-        await this.tokenRepo.save(token);
+        void this.tokenRepo.save(token);
       }
     });
 

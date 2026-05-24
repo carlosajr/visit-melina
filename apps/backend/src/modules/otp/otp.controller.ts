@@ -31,7 +31,11 @@ export class OtpController {
     const ag = await this.agService.buscarPorWhatsappDigits(dto.whatsapp);
     if (!ag) return { enviado: false, motivo: 'Agendamento não encontrado' };
     const ip = (req.headers['x-forwarded-for'] as string) || req.ip || '';
-    await this.otpService.enviar(ag.whatsappDigits, ag.waId || ag.whatsappDigits, ip);
+    await this.otpService.enviar(
+      ag.whatsappDigits,
+      ag.waId || ag.whatsappDigits,
+      ip,
+    );
     return { enviado: true };
   }
 

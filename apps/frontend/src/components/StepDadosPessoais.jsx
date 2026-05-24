@@ -18,6 +18,7 @@ export function StepDadosPessoais({ valor, onChange, onContinue, onBack, checkWh
 
   // Debounce da checagem de whatsapp na API
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!validacaoWpp.valido) { setDuplicado(false); return; }
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {

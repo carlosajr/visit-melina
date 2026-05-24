@@ -32,6 +32,7 @@ export function useSlots() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { carregar(); }, [carregar]);
 
   const slotsParaTipo = useCallback((tipo) => {

@@ -1,10 +1,15 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 
 export interface VisitorPayload {
-  sub: string;       // whatsappDigits
+  sub: string; // whatsappDigits
   role: 'visitor';
   agendamentoId?: string;
 }
@@ -17,7 +22,9 @@ export class VisitorJwtGuard implements CanActivate {
   ) {}
 
   canActivate(ctx: ExecutionContext): boolean {
-    const req = ctx.switchToHttp().getRequest<Request & { visitor: VisitorPayload }>();
+    const req = ctx
+      .switchToHttp()
+      .getRequest<Request & { visitor: VisitorPayload }>();
     const auth = req.headers['authorization'];
     if (!auth?.startsWith('Bearer ')) throw new UnauthorizedException();
     try {

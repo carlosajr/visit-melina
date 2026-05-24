@@ -21,7 +21,9 @@ export class WhatsAppService {
   private readonly token: string;
 
   constructor(private config: ConfigService) {
-    this.baseUrl = config.getOrThrow<string>('WHATSAPP_GATEWAY_URL').replace(/\/$/, '');
+    this.baseUrl = config
+      .getOrThrow<string>('WHATSAPP_GATEWAY_URL')
+      .replace(/\/$/, '');
     this.token = config.getOrThrow<string>('WHATSAPP_GATEWAY_TOKEN');
   }
 
@@ -30,7 +32,8 @@ export class WhatsAppService {
     if (!raw) throw new Error('Telefone é obrigatório');
     const hasPlus = raw.startsWith('+');
     const digits = raw.replace(/\D/g, '');
-    if (digits.length < 10 || digits.length > 15) throw new Error('Telefone inválido');
+    if (digits.length < 10 || digits.length > 15)
+      throw new Error('Telefone inválido');
     if (hasPlus) return `+${digits}`;
     if (digits.startsWith('55')) return `+${digits}`;
     return `+55${digits}`;
@@ -42,11 +45,17 @@ export class WhatsAppService {
 
   async resolveNumber(phone: string): Promise<ResolveNumberResult> {
     const to = this.normalizeE164(phone);
-    const res = await this.fetchWithRetry(`${this.baseUrl}/v1/whatsapp/resolve-number`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-internal-token': this.token },
-      body: JSON.stringify({ to }),
-    });
+    const res = await this.fetchWithRetry(
+      `${this.baseUrl}/v1/whatsapp/resolve-number`,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-internal-token': this.token,
+        },
+        body: JSON.stringify({ to }),
+      },
+    );
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`WhatsApp resolve falhou. HTTP ${res.status}: ${text}`);
@@ -62,7 +71,10 @@ export class WhatsAppService {
   }): Promise<SendTextResult> {
     const res = await this.fetchWithRetry(`${this.baseUrl}/v1/messages/text`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-internal-token': this.token },
+      headers: {
+        'content-type': 'application/json',
+        'x-internal-token': this.token,
+      },
       body: JSON.stringify({
         to: input.to,
         text: input.text,
@@ -74,23 +86,44 @@ export class WhatsAppService {
       const text = await res.text();
       throw new Error(`WhatsApp send falhou. HTTP ${res.status}: ${text}`);
     }
-    const payload = await res.json() as { jobId?: string; status?: SendTextResult['status'] };
-    if (!payload.jobId || !payload.status) throw new Error('Resposta inválida do WhatsApp Gateway');
-    return { jobId: payload.jobId, status: payload.status, httpStatus: res.status };
+    const payload = (await res.json()) as {
+      jobId?: string;
+      status?: SendTextResult['status'];
+    };
+    if (!payload.jobId || !payload.status)
+      throw new Error('Resposta inválida do WhatsApp Gateway');
+    return {
+      jobId: payload.jobId,
+      status: payload.status,
+      httpStatus: res.status,
+    };
   }
 
-  private async fetchWithRetry(url: string, init: RequestInit, attempt = 1): Promise<Response> {
+  private async fetchWithRetry(
+    url: string,
+    init: RequestInit,
+    attempt = 1,
+  ): Promise<Response> {
     const MAX = 3;
     const RETRYABLE = new Set([429, 500, 502, 503, 504]);
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(10_000), ...init });
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(10_000),
+        ...init,
+      });
       if (RETRYABLE.has(res.status) && attempt < MAX) {
         await this.sleep(300 * attempt);
         return this.fetchWithRetry(url, init, attempt + 1);
       }
       return res;
     } catch (err: unknown) {
-      const retryable = ['ECONNREFUSED', 'ETIMEDOUT', 'ECONNRESET', 'EAI_AGAIN', 'AbortError'];
+      const retryable = [
+        'ECONNREFUSED',
+        'ETIMEDOUT',
+        'ECONNRESET',
+        'EAI_AGAIN',
+        'AbortError',
+      ];
       const code = (err as NodeJS.ErrnoException).code ?? (err as Error).name;
       if (retryable.includes(code) && attempt < MAX) {
         this.logger.warn(`WhatsApp retry ${attempt} — ${code}`);

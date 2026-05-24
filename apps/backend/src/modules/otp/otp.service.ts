@@ -28,13 +28,19 @@ export class OtpService {
     this.maxAttempts = config.get<number>('OTP_MAX_ATTEMPTS') ?? 5;
   }
 
-  async enviar(whatsappDigits: string, waId: string, ip: string): Promise<void> {
+  async enviar(
+    whatsappDigits: string,
+    waId: string,
+    ip: string,
+  ): Promise<void> {
     // Invalida OTPs anteriores não usados para este número
     await this.repo
       .createQueryBuilder()
       .update()
       .set({ usedAt: new Date() })
-      .where('whatsapp = :w AND used_at IS NULL AND expires_at > NOW()', { w: whatsappDigits })
+      .where('whatsapp = :w AND used_at IS NULL AND expires_at > NOW()', {
+        w: whatsappDigits,
+      })
       .execute();
 
     const code = this.gerarCodigo();
@@ -49,8 +55,12 @@ export class OtpService {
     await this.wa.sendText({
       to: waId,
       text: `Olá! Seu código de acesso para o agendamento da Melina é *${code}*\nEle é válido por ${minutes} minutos.\nPor segurança, não compartilhe este código.`,
-      correlationId: this.toUuid(`otp:${whatsappDigits}:${expiresAt.getTime()}`),
-      idempotencyKey: this.toUuid(`otp:${whatsappDigits}:${expiresAt.getTime()}`),
+      correlationId: this.toUuid(
+        `otp:${whatsappDigits}:${expiresAt.getTime()}`,
+      ),
+      idempotencyKey: this.toUuid(
+        `otp:${whatsappDigits}:${expiresAt.getTime()}`,
+      ),
     });
   }
 
@@ -96,6 +106,6 @@ export class OtpService {
 
   private toUuid(input: string): string {
     const h = createHash('sha256').update(input).digest('hex');
-    return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
   }
 }

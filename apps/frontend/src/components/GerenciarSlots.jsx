@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { IconPlus, IconX, IconTrash, IconCheck } from './Decoracao';
 import { useSlots, tipoDoDia } from '../hooks/useSlots';
-import { formatarDataExtensa, formatarHorario, isoDia, diaSemana } from '../utils/datas';
+import { formatarDataExtensa, formatarHorario, diaSemana } from '../utils/datas';
 
 export function GerenciarSlots({ listaAgendamentos = [] }) {
   const slots = useSlots();

@@ -28,7 +28,10 @@ export class LembreteCron {
     const { sabado, domingo } = this.proximoFimDeSemana();
     this.logger.log(`Enviando lembretes para ${sabado} e ${domingo}`);
 
-    const agendamentos = await this.agService.findBySabadoDomingo(sabado, domingo);
+    const agendamentos = await this.agService.findBySabadoDomingo(
+      sabado,
+      domingo,
+    );
     this.logger.log(`${agendamentos.length} agendamento(s) encontrado(s)`);
 
     if (agendamentos.length === 0) return;
@@ -45,8 +48,10 @@ export class LembreteCron {
           correlationId: this.lembreteUuid(ag.id, sabado),
           idempotencyKey: this.lembreteUuid(ag.id, sabado),
         });
-      } catch (e) {
-        this.logger.error(`Falha ao enviar lembrete para ${ag.id}: ${e.message}`);
+      } catch (e: unknown) {
+        this.logger.error(
+          `Falha ao enviar lembrete para ${ag.id}: ${(e as Error).message}`,
+        );
       }
     }
 
@@ -54,39 +59,58 @@ export class LembreteCron {
     await this.notificarPais(agendamentos, sabado, domingo);
   }
 
-  private async notificarPais(agendamentos: Agendamento[], sabado: string, domingo: string): Promise<void> {
+  private async notificarPais(
+    agendamentos: Agendamento[],
+    sabado: string,
+    domingo: string,
+  ): Promise<void> {
     if (this.paisWhatsapp.length === 0) return;
 
-    const porDia = (data: string) => agendamentos.filter((ag) => ag.data === data);
-    const linhasDia = (data: string) => porDia(data).map((ag) => {
-      const acomp = ag.acompanhantes.length > 0 ? ` (+${ag.acompanhantes.length})` : '';
-      return `  • ${ag.nome}${acomp} · ${ag.horario}`;
-    });
+    const porDia = (data: string) =>
+      agendamentos.filter((ag) => ag.data === data);
+    const linhasDia = (data: string) =>
+      porDia(data).map((ag) => {
+        const acomp =
+          ag.acompanhantes.length > 0 ? ` (+${ag.acompanhantes.length})` : '';
+        return `  • ${ag.nome}${acomp} · ${ag.horario}`;
+      });
 
     const blocos: string[] = [];
     if (porDia(sabado).length > 0) {
-      blocos.push(`📅 *Sábado, ${this.formatarData(sabado)}:*\n${linhasDia(sabado).join('\n')}`);
+      blocos.push(
+        `📅 *Sábado, ${this.formatarData(sabado)}:*\n${linhasDia(sabado).join('\n')}`,
+      );
     }
     if (porDia(domingo).length > 0) {
-      blocos.push(`📅 *Domingo, ${this.formatarData(domingo)}:*\n${linhasDia(domingo).join('\n')}`);
+      blocos.push(
+        `📅 *Domingo, ${this.formatarData(domingo)}:*\n${linhasDia(domingo).join('\n')}`,
+      );
     }
 
     const texto = `🌸 *Visitas da Melina este fim de semana:*\n\n${blocos.join('\n\n')}`;
 
     for (const numero of this.paisWhatsapp) {
-      await this.wa.sendText({
-        to: numero,
-        text: texto,
-        correlationId: this.lembreteUuid(`pais:${numero}`, sabado),
-        idempotencyKey: this.lembreteUuid(`pais:${numero}`, sabado),
-      }).catch((e) => this.logger.warn(`Falha ao notificar pai ${numero}: ${e.message}`));
+      await this.wa
+        .sendText({
+          to: numero,
+          text: texto,
+          correlationId: this.lembreteUuid(`pais:${numero}`, sabado),
+          idempotencyKey: this.lembreteUuid(`pais:${numero}`, sabado),
+        })
+        .catch((e: unknown) =>
+          this.logger.warn(
+            `Falha ao notificar pai ${numero}: ${(e as Error).message}`,
+          ),
+        );
     }
   }
 
   // Gera UUID v4-like determinístico a partir de agendamentoId + semana (para idempotência)
   private lembreteUuid(agId: string, semana: string): string {
-    const hash = createHash('sha256').update(`lembrete:${agId}:${semana}`).digest('hex');
-    return `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-${hash.slice(16,20)}-${hash.slice(20,32)}`;
+    const hash = createHash('sha256')
+      .update(`lembrete:${agId}:${semana}`)
+      .digest('hex');
+    return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
   }
 
   private proximoFimDeSemana(): { sabado: string; domingo: string } {

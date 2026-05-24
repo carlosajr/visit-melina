@@ -9,7 +9,12 @@ import { AgendamentosService } from './agendamentos.service';
 import { LembreteCron } from './lembrete.cron';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Agendamento]), WhatsAppModule, SlotsModule, GoogleCalendarModule],
+  imports: [
+    TypeOrmModule.forFeature([Agendamento]),
+    WhatsAppModule,
+    SlotsModule,
+    GoogleCalendarModule,
+  ],
   providers: [AgendamentosService, LembreteCron],
   controllers: [AgendamentosController],
   exports: [AgendamentosService],

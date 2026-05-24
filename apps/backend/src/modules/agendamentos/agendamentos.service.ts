@@ -65,14 +65,15 @@ export class AgendamentosService {
     const wppDuplicado = await this.repo.findOne({
       where: { whatsappDigits: digits, canceladoEm: IsNull() },
     });
-    if (wppDuplicado) throw new BadRequestException('Já existe agendamento para este WhatsApp');
+    if (wppDuplicado)
+      throw new BadRequestException('Já existe agendamento para este WhatsApp');
 
     // Resolve waId no gateway
     let waId: string = digits;
     try {
       const resolved = await this.wa.resolveNumber(dto.whatsapp);
       waId = resolved.resolved;
-    } catch (err) {
+    } catch {
       throw new BadRequestException(
         'Número informado não é um WhatsApp válido ou não foi encontrado',
       );
@@ -92,7 +93,7 @@ export class AgendamentosService {
       acompanhantes,
     });
 
-    const saved = await this.repo.save(ag) as Agendamento;
+    const saved = await this.repo.save(ag);
 
     // Aguarda pós-criação para retornar estado final (WhatsApp + Google Calendar)
     await this.posCreate(saved).catch((e) =>
@@ -102,7 +103,11 @@ export class AgendamentosService {
     return (await this.repo.findOneBy({ id: saved.id })) ?? saved;
   }
 
-  async update(id: string, dto: UpdateAgendamentoDto, whatsappDigits: string): Promise<Agendamento> {
+  async update(
+    id: string,
+    dto: UpdateAgendamentoDto,
+    whatsappDigits: string,
+  ): Promise<Agendamento> {
     const ag = await this.repo.findOne({
       where: { id, whatsappDigits, canceladoEm: IsNull() },
     });
@@ -115,7 +120,8 @@ export class AgendamentosService {
       const dataOcupada = await this.repo.findOne({
         where: { data: dto.data, canceladoEm: IsNull() },
       });
-      if (dataOcupada) throw new BadRequestException('Esta data já está ocupada');
+      if (dataOcupada)
+        throw new BadRequestException('Esta data já está ocupada');
     }
 
     ag.data = dto.data;
@@ -131,7 +137,7 @@ export class AgendamentosService {
     if (!ag) throw new NotFoundException('Agendamento não encontrado');
     ag.canceladoEm = new Date();
     const saved = await this.repo.save(ag);
-    this.posCancelamento(saved).catch(() => {});
+    this.posCancelamento(saved);
     return saved;
   }
 
@@ -142,11 +148,11 @@ export class AgendamentosService {
     if (!ag) throw new NotFoundException('Agendamento não encontrado');
     ag.canceladoEm = new Date();
     const saved = await this.repo.save(ag);
-    this.posCancelamento(saved, true).catch(() => {});
+    this.posCancelamento(saved, true);
     return saved;
   }
 
-  private async posCancelamento(ag: Agendamento, peloAdmin = false): Promise<void> {
+  private posCancelamento(ag: Agendamento, peloAdmin = false): void {
     if (ag.googleEventId) {
       this.gcal.cancelEvent(ag.googleEventId).catch(() => {});
     }
@@ -158,39 +164,55 @@ export class AgendamentosService {
       ? `Olá, *${ag.nome}*. Seu agendamento de visita à Melina no dia *${this.formatarData(ag.data)}* foi cancelado pelo organizador. Se quiser remarcar, acesse o site. 💛`
       : `Seu agendamento de visita à Melina no dia *${this.formatarData(ag.data)}* foi cancelado. Se mudar de ideia, remarque quando quiser. 💛`;
 
-    this.wa.sendText({
-      to: ag.waId || ag.whatsappDigits,
-      text: textoVisitante,
-      correlationId: this.toUuid(`cancel:${ag.id}`),
-      idempotencyKey: this.toUuid(`cancel:${ag.id}`),
-    }).catch((e) => this.logger.warn(`Falha ao notificar cancelamento ao visitante: ${e.message}`));
+    this.wa
+      .sendText({
+        to: ag.waId || ag.whatsappDigits,
+        text: textoVisitante,
+        correlationId: this.toUuid(`cancel:${ag.id}`),
+        idempotencyKey: this.toUuid(`cancel:${ag.id}`),
+      })
+      .catch((e: unknown) =>
+        this.logger.warn(
+          `Falha ao notificar cancelamento ao visitante: ${(e as Error).message}`,
+        ),
+      );
 
     // Avisa os pais
     const textoPais =
       `❌ *Visita cancelada*\n\n` +
       `👤 ${ag.nome}\n` +
       `📅 ${this.formatarData(ag.data)} · ${ag.horario}\n` +
-      (peloAdmin ? `_(cancelado pelo organizador)_` : `_(cancelado pelo próprio visitante)_`);
+      (peloAdmin
+        ? `_(cancelado pelo organizador)_`
+        : `_(cancelado pelo próprio visitante)_`);
 
     for (const numero of this.paisWhatsapp) {
-      this.wa.sendText({
-        to: numero,
-        text: textoPais,
-        correlationId: this.toUuid(`cancel-pais:${ag.id}:${numero}`),
-        idempotencyKey: this.toUuid(`cancel-pais:${ag.id}:${numero}`),
-      }).catch((e) => this.logger.warn(`Falha ao notificar cancelamento aos pais (${numero}): ${e.message}`));
+      this.wa
+        .sendText({
+          to: numero,
+          text: textoPais,
+          correlationId: this.toUuid(`cancel-pais:${ag.id}:${numero}`),
+          idempotencyKey: this.toUuid(`cancel-pais:${ag.id}:${numero}`),
+        })
+        .catch((e: unknown) =>
+          this.logger.warn(
+            `Falha ao notificar cancelamento aos pais (${numero}): ${(e as Error).message}`,
+          ),
+        );
     }
   }
 
   private toUuid(input: string): string {
     const h = createHash('sha256').update(input).digest('hex');
-    return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
   }
 
   private async posCreate(ag: Agendamento): Promise<void> {
     await this.enviarConfirmacao(ag);
 
-    const visitantes = [ag.nome, ...ag.acompanhantes].map((n) => `• ${n}`).join('\n');
+    const visitantes = [ag.nome, ...ag.acompanhantes]
+      .map((n) => `• ${n}`)
+      .join('\n');
     const descricao = `👥 Visitantes:\n${visitantes}`;
 
     const eventId = await this.gcal.createEvent({
@@ -210,7 +232,10 @@ export class AgendamentosService {
   }
 
   // Busca agendamentos de um fim de semana específico para o cron
-  async findBySabadoDomingo(sabado: string, domingo: string): Promise<Agendamento[]> {
+  async findBySabadoDomingo(
+    sabado: string,
+    domingo: string,
+  ): Promise<Agendamento[]> {
     return this.repo
       .createQueryBuilder('ag')
       .where('ag.data IN (:...datas)', { datas: [sabado, domingo] })
@@ -247,9 +272,10 @@ export class AgendamentosService {
   private async notificarPais(ag: Agendamento): Promise<void> {
     if (this.paisWhatsapp.length === 0) return;
 
-    const acomp = ag.acompanhantes.length > 0
-      ? `\n👥 Acompanhantes: ${ag.acompanhantes.join(', ')}`
-      : '';
+    const acomp =
+      ag.acompanhantes.length > 0
+        ? `\n👥 Acompanhantes: ${ag.acompanhantes.join(', ')}`
+        : '';
     const texto =
       `🌸 *Nova visita agendada!*\n\n` +
       `👤 ${ag.nome}${acomp}\n` +
@@ -258,12 +284,18 @@ export class AgendamentosService {
       (ag.email ? `\n📧 ${ag.email}` : '');
 
     for (const numero of this.paisWhatsapp) {
-      await this.wa.sendText({
-        to: numero,
-        text: texto,
-        correlationId: this.toUuid(`notif-pais:${ag.id}:${numero}`),
-        idempotencyKey: this.toUuid(`notif-pais:${ag.id}:${numero}`),
-      }).catch((e) => this.logger.warn(`Falha ao notificar pai ${numero}: ${e.message}`));
+      await this.wa
+        .sendText({
+          to: numero,
+          text: texto,
+          correlationId: this.toUuid(`notif-pais:${ag.id}:${numero}`),
+          idempotencyKey: this.toUuid(`notif-pais:${ag.id}:${numero}`),
+        })
+        .catch((e: unknown) =>
+          this.logger.warn(
+            `Falha ao notificar pai ${numero}: ${(e as Error).message}`,
+          ),
+        );
     }
   }
 

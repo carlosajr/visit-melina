@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  VMBrand, IconArrowL, IconCheck, IconX, IconWpp, IconHex,
+  VMBrand, IconArrowL, IconCheck, IconWpp,
   IconCalendar, IconFlower, IconTrash,
 } from './Decoracao';
 import { useAgendamentos } from '../hooks/useAgendamentos';
@@ -25,6 +25,7 @@ function Row({ k, v }) {
 function CodeCountdown({ desde, total = 60 }) {
   const [restante, setRestante] = useState(total);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRestante(total);
     const t = setInterval(() => setRestante((r) => Math.max(0, r - 1)), 1000);
     return () => clearInterval(t);
@@ -52,7 +53,7 @@ export function MeuAgendamento({
   const [carregando, setCarregando] = useState(false);
   const [otpCodigo, setOtpCodigo] = useState('');
   const [otpErro, setOtpErro] = useState('');
-  const [otpReenviadoEm, setOtpReenviadoEm] = useState(Date.now());
+  const [otpReenviadoEm, setOtpReenviadoEm] = useState(() => Date.now());
   const [confirmarCancelar, setConfirmarCancelar] = useState(false);
   const [cancelado, setCancelado] = useState(false);
 
@@ -60,6 +61,7 @@ export function MeuAgendamento({
 
   useEffect(() => {
     if (agendamentoPreCarregado) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResultado(agendamentoPreCarregado);
       setBusca(agendamentoPreCarregado.whatsapp);
       setEtapa(pularOTP ? 'view' : 'otp');

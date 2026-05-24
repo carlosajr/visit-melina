@@ -7,12 +7,17 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: (origin, callback) => {
-      // Permite ausência de origin (curl, Swagger, mobile) e qualquer localhost
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
         return callback(null, true);
       }
-      const allowed = (process.env.FRONTEND_URL ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+      const allowed = (process.env.FRONTEND_URL ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (allowed.includes(origin)) return callback(null, true);
       callback(new Error(`CORS bloqueado para origin: ${origin}`));
     },
@@ -22,7 +27,11 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
   );
 
   const config = new DocumentBuilder()
@@ -38,4 +47,4 @@ async function bootstrap() {
   console.log(`🌸 Backend rodando em http://localhost:${port}`);
   console.log(`📖 Swagger em http://localhost:${port}/docs`);
 }
-bootstrap();
+void bootstrap();
