@@ -44,7 +44,7 @@ export function StepDadosPessoais({ valor, onChange, onContinue, onBack, checkWh
       <button type="button" className="vm-back" onClick={onBack}>
         <IconArrowL color="var(--ink-soft)"/> Voltar
       </button>
-      <ProgressIndicator step={3} total={5} labels={['Tipo', 'Data', 'Dados', 'Acompanhantes', 'Confirmação']} />
+      <ProgressIndicator step={2} total={4} labels={['Data', 'Dados', 'Acompanhantes', 'Confirmação']} />
       <div>
         <h2 className="vm-h2">Conta um pouquinho sobre você</h2>
         <p className="vm-lede" style={{ marginTop: 6 }}>

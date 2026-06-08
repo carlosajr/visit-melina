@@ -272,12 +272,11 @@ export function MeuAgendamento({
       </div>
 
       <div className="vm-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span className={`vm-pill ${resultado.tipo === 'amigo' ? 'is-amigo' : 'is-familia'}`}>
-            {resultado.tipo === 'amigo' ? 'Sou Amigo 🌸' : 'Sou Família 🍯'}
-          </span>
-          {resultado.inviteSent && <span className="vm-pill is-gcal"><IconCalendar size={12}/> &nbsp;Google Calendar</span>}
-        </div>
+        {resultado.inviteSent && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 10 }}>
+            <span className="vm-pill is-gcal"><IconCalendar size={12}/> &nbsp;Google Calendar</span>
+          </div>
+        )}
         <div className="vm-sum-list">
           <Row k="Data" v={`${formatarDataExtensa(resultado.data)} · ${formatarHorario(resultado.horario || '16:00')}`}/>
           <Row k="Nome" v={resultado.nome}/>

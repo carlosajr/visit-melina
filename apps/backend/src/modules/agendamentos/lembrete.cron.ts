@@ -25,13 +25,10 @@ export class LembreteCron {
   // Toda sexta-feira às 12h (horário de Brasília)
   @Cron('0 12 * * 5', { timeZone: 'America/Sao_Paulo' })
   async enviarLembretes() {
-    const { sabado, domingo } = this.proximoFimDeSemana();
-    this.logger.log(`Enviando lembretes para ${sabado} e ${domingo}`);
+    const sabado = this.proximoSabado();
+    this.logger.log(`Enviando lembretes para ${sabado}`);
 
-    const agendamentos = await this.agService.findBySabadoDomingo(
-      sabado,
-      domingo,
-    );
+    const agendamentos = await this.agService.findBySabado(sabado);
     this.logger.log(`${agendamentos.length} agendamento(s) encontrado(s)`);
 
     if (agendamentos.length === 0) return;
@@ -43,7 +40,7 @@ export class LembreteCron {
           to: ag.waId || ag.whatsappDigits,
           text:
             `Olá, *${ag.nome}*! 🌸\n` +
-            `Lembrando que sua visita à Melina é *${this.diaNome(ag.data)}, ${this.formatarData(ag.data)} às ${ag.horario}*.\n` +
+            `Lembrando que sua visita à Melina é *sábado, ${this.formatarData(ag.data)} às ${ag.horario}*.\n` +
             `Estamos te esperando! 💛`,
           correlationId: this.lembreteUuid(ag.id, sabado),
           idempotencyKey: this.lembreteUuid(ag.id, sabado),
@@ -55,39 +52,25 @@ export class LembreteCron {
       }
     }
 
-    // Resumo do fim de semana para os pais
-    await this.notificarPais(agendamentos, sabado, domingo);
+    // Resumo do sábado para os pais
+    await this.notificarPais(agendamentos, sabado);
   }
 
   private async notificarPais(
     agendamentos: Agendamento[],
     sabado: string,
-    domingo: string,
   ): Promise<void> {
     if (this.paisWhatsapp.length === 0) return;
 
-    const porDia = (data: string) =>
-      agendamentos.filter((ag) => ag.data === data);
-    const linhasDia = (data: string) =>
-      porDia(data).map((ag) => {
-        const acomp =
-          ag.acompanhantes.length > 0 ? ` (+${ag.acompanhantes.length})` : '';
-        return `  • ${ag.nome}${acomp} · ${ag.horario}`;
-      });
+    const linhas = agendamentos.map((ag) => {
+      const acomp =
+        ag.acompanhantes.length > 0 ? ` (+${ag.acompanhantes.length})` : '';
+      return `  • ${ag.nome}${acomp} · ${ag.horario}`;
+    });
 
-    const blocos: string[] = [];
-    if (porDia(sabado).length > 0) {
-      blocos.push(
-        `📅 *Sábado, ${this.formatarData(sabado)}:*\n${linhasDia(sabado).join('\n')}`,
-      );
-    }
-    if (porDia(domingo).length > 0) {
-      blocos.push(
-        `📅 *Domingo, ${this.formatarData(domingo)}:*\n${linhasDia(domingo).join('\n')}`,
-      );
-    }
-
-    const texto = `🌸 *Visitas da Melina este fim de semana:*\n\n${blocos.join('\n\n')}`;
+    const texto =
+      `🌸 *Visitas da Melina neste sábado:*\n\n` +
+      `📅 *Sábado, ${this.formatarData(sabado)}:*\n${linhas.join('\n')}`;
 
     for (const numero of this.paisWhatsapp) {
       await this.wa
@@ -113,18 +96,13 @@ export class LembreteCron {
     return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
   }
 
-  private proximoFimDeSemana(): { sabado: string; domingo: string } {
+  private proximoSabado(): string {
     const hoje = new Date();
     const dow = hoje.getDay(); // 5=sexta
     const diasAteSabado = (6 - dow + 7) % 7 || 7;
     const sabado = new Date(hoje);
     sabado.setDate(hoje.getDate() + diasAteSabado);
-    const domingo = new Date(sabado);
-    domingo.setDate(sabado.getDate() + 1);
-    return {
-      sabado: this.toISO(sabado),
-      domingo: this.toISO(domingo),
-    };
+    return this.toISO(sabado);
   }
 
   private toISO(d: Date): string {
@@ -134,10 +112,5 @@ export class LembreteCron {
   private formatarData(iso: string): string {
     const [y, m, d] = iso.split('-');
     return `${d}/${m}/${y}`;
-  }
-
-  private diaNome(iso: string): string {
-    const dow = new Date(`${iso}T12:00:00`).getDay();
-    return dow === 6 ? 'sábado' : 'domingo';
   }
 }

@@ -6,21 +6,18 @@ import { ProgressIndicator } from './ProgressIndicator';
 import { useSlots } from '../hooks/useSlots';
 import { formatarHorario, diaSemana, nomeMesCurto } from '../utils/datas';
 
-export function StepEscolhaData({ tipo, valor, onSelect, onBack, datasOcupadas, ignorarOcupacaoData }) {
-  const { slotsParaTipo, carregando } = useSlots();
-  const slots = slotsParaTipo(tipo);
-
-  const tipoLabel = tipo === 'amigo' ? 'amigos' : 'família';
-  const accentLabel = tipo === 'amigo' ? 'sábado' : 'domingo';
+export function StepEscolhaData({ valor, onSelect, onBack, datasOcupadas, ignorarOcupacaoData }) {
+  const { slotsOrdenados, carregando } = useSlots();
+  const slots = slotsOrdenados();
 
   const cabecalho = (
     <>
       <button type="button" className="vm-back" onClick={onBack}>
         <IconArrowL color="var(--ink-soft)"/> Voltar
       </button>
-      <ProgressIndicator step={2} total={5} labels={['Tipo', 'Data', 'Dados', 'Acompanhantes', 'Confirmação']} />
+      <ProgressIndicator step={1} total={4} labels={['Data', 'Dados', 'Acompanhantes', 'Confirmação']} />
       <div>
-        <div className="vm-eyebrow">{tipoLabel} · {accentLabel}s</div>
+        <div className="vm-eyebrow">Visitas aos sábados</div>
         <h2 className="vm-h2" style={{ marginTop: 6 }}>Escolha um dia para visitar</h2>
         <p className="vm-lede" style={{ marginTop: 6 }}>
           Dias em cinza já estão ocupados. Toque em um cartão livre para continuar.
@@ -53,7 +50,7 @@ export function StepEscolhaData({ tipo, valor, onSelect, onBack, datasOcupadas, 
       {slots.length === 0 ? (
         <div className="vm-card vm-card-soft vm-empty">
           <IconHexOutline size={32} color="var(--muted)"/>
-          <div>Nenhum {accentLabel} disponível no momento.</div>
+          <div>Nenhum sábado disponível no momento.</div>
         </div>
       ) : (
         <div className="vm-date-grid">

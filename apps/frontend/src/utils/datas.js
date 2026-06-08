@@ -23,11 +23,10 @@ export function isoDia(d) {
 }
 
 // TODO: integrar com API — horário virá do backend, podendo variar por dia
-export function gerarDatasDisponiveis(tipo, base = DATA_INICIAL, semanas = SEMANAS_DISPONIVEIS) {
-  const diaAlvo = tipo === 'amigo' ? 6 : 0; // sáb = 6, dom = 0
+export function gerarDatasDisponiveis(base = DATA_INICIAL, semanas = SEMANAS_DISPONIVEIS) {
   const out = [];
   const cursor = new Date(base);
-  while (cursor.getDay() !== diaAlvo) cursor.setDate(cursor.getDate() + 1);
+  while (cursor.getDay() !== 6) cursor.setDate(cursor.getDate() + 1); // sáb = 6
   for (let i = 0; i < semanas; i++) {
     const d = new Date(cursor);
     out.push({ data: d, iso: isoDia(d), horario: '16:00' });

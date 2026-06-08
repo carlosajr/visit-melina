@@ -3,12 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, apiAdmin } from '../api/client';
 
-export function tipoDoDia(iso) {
-  if (!iso) return null;
+export function isSabado(iso) {
+  if (!iso) return false;
   const d = new Date(iso + 'T12:00:00');
-  if (d.getDay() === 6) return 'amigo';
-  if (d.getDay() === 0) return 'familia';
-  return null;
+  return d.getDay() === 6;
 }
 
 // Mapeia resposta da API {id, data, horario} → {id, iso, horario}
@@ -35,14 +33,12 @@ export function useSlots() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { carregar(); }, [carregar]);
 
-  const slotsParaTipo = useCallback((tipo) => {
-    return lista
-      .filter((s) => tipoDoDia(s.iso) === tipo)
-      .sort((a, b) => a.iso.localeCompare(b.iso));
+  const slotsOrdenados = useCallback(() => {
+    return [...lista].sort((a, b) => a.iso.localeCompare(b.iso));
   }, [lista]);
 
   const criar = useCallback(async (iso, horario) => {
-    if (!tipoDoDia(iso)) throw new Error('A data deve ser um sábado ou domingo');
+    if (!isSabado(iso)) throw new Error('A data deve ser um sábado');
     if (!/^\d{2}:\d{2}$/.test(horario)) throw new Error('Horário em formato inválido');
     const novo = await apiAdmin('/slots', {
       method: 'POST',
@@ -68,5 +64,5 @@ export function useSlots() {
     setLista((l) => l.filter((s) => s.id !== id));
   }, []);
 
-  return { lista, carregando, slotsParaTipo, criar, atualizar, remover };
+  return { lista, carregando, slotsOrdenados, criar, atualizar, remover };
 }

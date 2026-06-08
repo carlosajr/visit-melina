@@ -52,7 +52,7 @@ export class AgendamentosService {
   }
 
   async create(dto: CreateAgendamentoDto): Promise<Agendamento> {
-    const tipo = this.slots.tipoDoDia(dto.data);
+    this.slots.validarDia(dto.data);
 
     // Valida unicidade de data
     const dataOcupada = await this.repo.findOne({
@@ -82,7 +82,6 @@ export class AgendamentosService {
     const acompanhantes = (dto.acompanhantes ?? []).filter((n) => n.trim());
 
     const ag = this.repo.create({
-      tipo,
       data: dto.data,
       horario: dto.horario,
       nome: dto.nome.trim(),
@@ -113,7 +112,7 @@ export class AgendamentosService {
     });
     if (!ag) throw new NotFoundException('Agendamento não encontrado');
 
-    const tipo = this.slots.tipoDoDia(dto.data);
+    this.slots.validarDia(dto.data);
 
     // Valida que nova data não está ocupada por outro agendamento
     if (dto.data !== ag.data) {
@@ -126,7 +125,6 @@ export class AgendamentosService {
 
     ag.data = dto.data;
     ag.horario = dto.horario;
-    ag.tipo = tipo;
     return this.repo.save(ag);
   }
 
@@ -231,14 +229,11 @@ export class AgendamentosService {
     }
   }
 
-  // Busca agendamentos de um fim de semana específico para o cron
-  async findBySabadoDomingo(
-    sabado: string,
-    domingo: string,
-  ): Promise<Agendamento[]> {
+  // Busca agendamentos de um sábado específico para o cron
+  async findBySabado(sabado: string): Promise<Agendamento[]> {
     return this.repo
       .createQueryBuilder('ag')
-      .where('ag.data IN (:...datas)', { datas: [sabado, domingo] })
+      .where('ag.data = :data', { data: sabado })
       .andWhere('ag.cancelado_em IS NULL')
       .getMany();
   }

@@ -2,15 +2,14 @@
 
 import { useState, useMemo } from 'react';
 import { IconPlus, IconX, IconTrash, IconCheck } from './Decoracao';
-import { useSlots, tipoDoDia } from '../hooks/useSlots';
+import { useSlots, isSabado } from '../hooks/useSlots';
 import { formatarDataExtensa, formatarHorario, diaSemana } from '../utils/datas';
 
 export function GerenciarSlots({ listaAgendamentos = [] }) {
   const slots = useSlots();
   const { carregando } = slots;
   const [erro, setErro] = useState('');
-  // novoSlot: null = fechado | 'amigo' | 'familia'
-  const [novoSlot, setNovoSlot] = useState(null);
+  const [formAberto, setFormAberto] = useState(false);
   const [novaData, setNovaData] = useState('');
   const [novoHorario, setNovoHorario] = useState('16:00');
   const [salvando, setSalvando] = useState(false);
@@ -21,18 +20,17 @@ export function GerenciarSlots({ listaAgendamentos = [] }) {
     return m;
   }, [listaAgendamentos]);
 
-  const sabados = slots.slotsParaTipo('amigo');
-  const domingos = slots.slotsParaTipo('familia');
+  const sabados = slots.slotsOrdenados();
 
-  const abrirForm = (tipo) => {
+  const abrirForm = () => {
     setErro('');
-    setNovoSlot(tipo);
+    setFormAberto(true);
     setNovaData('');
     setNovoHorario('16:00');
   };
 
   const fecharForm = () => {
-    setNovoSlot(null);
+    setFormAberto(false);
     setNovaData('');
     setNovoHorario('16:00');
     setErro('');
@@ -40,12 +38,7 @@ export function GerenciarSlots({ listaAgendamentos = [] }) {
 
   const confirmarAdicionar = async () => {
     if (!novaData) { setErro('Escolha uma data.'); return; }
-    const tipo = tipoDoDia(novaData);
-    if (!tipo) { setErro('A data deve ser um sábado ou domingo.'); return; }
-    if (novoSlot && tipo !== novoSlot) {
-      setErro(`Esta data é ${tipo === 'amigo' ? 'um sábado (amigos)' : 'um domingo (família)'}, não pode adicionar aqui.`);
-      return;
-    }
+    if (!isSabado(novaData)) { setErro('A data deve ser um sábado.'); return; }
     setSalvando(true);
     setErro('');
     try {
@@ -61,13 +54,7 @@ export function GerenciarSlots({ listaAgendamentos = [] }) {
   const editarData = async (slot, novaIso) => {
     setErro('');
     if (!novaIso) return;
-    const tipoAtual = tipoDoDia(slot.iso);
-    const tipoNovo = tipoDoDia(novaIso);
-    if (!tipoNovo) { setErro('A data deve ser um sábado ou domingo.'); return; }
-    if (tipoNovo !== tipoAtual) {
-      setErro(`Esta data é ${tipoNovo === 'amigo' ? 'sábado (amigos)' : 'domingo (família)'} — não pode mover entre os tipos.`);
-      return;
-    }
+    if (!isSabado(novaIso)) { setErro('A data deve ser um sábado.'); return; }
     try { await slots.atualizar(slot.id, { iso: novaIso }); }
     catch (e) { setErro(e.message); }
   };
@@ -108,11 +95,11 @@ export function GerenciarSlots({ listaAgendamentos = [] }) {
       )}
 
       {/* Formulário de novo slot */}
-      {novoSlot && (
+      {formAberto && (
         <div className="vm-card" style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
-              Novo slot · {novoSlot === 'amigo' ? '🌸 Sábado (amigos)' : '🍯 Domingo (família)'}
+              Novo slot · 🌸 Sábado
             </span>
             <button
               type="button"
@@ -154,34 +141,22 @@ export function GerenciarSlots({ listaAgendamentos = [] }) {
             </button>
           </div>
 
-          {novaData && !tipoDoDia(novaData) && (
-            <p className="vm-error" style={{ margin: 0 }}>Esta data não é sábado nem domingo.</p>
-          )}
-          {novaData && tipoDoDia(novaData) && tipoDoDia(novaData) !== novoSlot && (
-            <p className="vm-error" style={{ margin: 0 }}>
-              {tipoDoDia(novaData) === 'amigo' ? 'Esta data é sábado — adicione em "Amigos".' : 'Esta data é domingo — adicione em "Família".'}
-            </p>
+          {novaData && !isSabado(novaData) && (
+            <p className="vm-error" style={{ margin: 0 }}>Esta data não é um sábado.</p>
           )}
         </div>
       )}
 
       <SlotsSection
-        titulo="Sábados · amigos" pillClass="is-amigo" emoji="🌸"
+        titulo="Sábados" pillClass="is-amigo" emoji="🌸"
         slots={sabados} ocupadosMap={ocupadosMap} carregando={carregando}
-        adicionarAberto={novoSlot === 'amigo'}
-        onAdicionar={() => abrirForm('amigo')}
-        onEditarData={editarData} onEditarHorario={editarHorario} onRemover={remover}
-      />
-      <SlotsSection
-        titulo="Domingos · família" pillClass="is-familia" emoji="🍯"
-        slots={domingos} ocupadosMap={ocupadosMap} carregando={carregando}
-        adicionarAberto={novoSlot === 'familia'}
-        onAdicionar={() => abrirForm('familia')}
+        adicionarAberto={formAberto}
+        onAdicionar={abrirForm}
         onEditarData={editarData} onEditarHorario={editarHorario} onRemover={remover}
       />
 
       <p className="vm-helper" style={{ marginTop: 8, fontSize: 11.5 }}>
-        Apenas <b>sábados</b> (amigos) e <b>domingos</b> (família) podem ser cadastrados.
+        Apenas <b>sábados</b> podem ser cadastrados.
       </p>
     </div>
   );

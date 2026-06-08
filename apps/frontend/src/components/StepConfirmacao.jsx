@@ -28,7 +28,6 @@ function Row({ k, v, onEdit }) {
 }
 
 export function StepConfirmacao({ valor, onConfirmar, onBack, onEditar, salvando, erro }) {
-  const tipoLabel = valor.tipo === 'amigo' ? 'Sou Amigo' : 'Sou Família';
   const acomp = (valor.acompanhantes || []).filter((n) => n.trim());
 
   return (
@@ -36,7 +35,7 @@ export function StepConfirmacao({ valor, onConfirmar, onBack, onEditar, salvando
       <button type="button" className="vm-back" onClick={onBack}>
         <IconArrowL color="var(--ink-soft)"/> Voltar
       </button>
-      <ProgressIndicator step={5} total={5} labels={['Tipo', 'Data', 'Dados', 'Acompanhantes', 'Confirmação']} />
+      <ProgressIndicator step={4} total={4} labels={['Data', 'Dados', 'Acompanhantes', 'Confirmação']} />
       <div>
         <h2 className="vm-h2">Tudo certinho?</h2>
         <p className="vm-lede" style={{ marginTop: 6 }}>
@@ -46,11 +45,6 @@ export function StepConfirmacao({ valor, onConfirmar, onBack, onEditar, salvando
 
       <div className="vm-card">
         <div className="vm-sum-list">
-          <Row k="Tipo" v={
-            <span className={`vm-pill ${valor.tipo === 'amigo' ? 'is-amigo' : 'is-familia'}`}>
-              {tipoLabel} {valor.tipo === 'amigo' ? '🌸' : '🍯'}
-            </span>
-          } onEdit={() => onEditar('tipo')}/>
           <Row k="Data" v={`${formatarDataExtensa(valor.data)} · ${formatarHorario(valor.horario || '16:00')}`} onEdit={() => onEditar('data')}/>
           <Row k="Nome" v={valor.nome} onEdit={() => onEditar('dados')}/>
           <Row k="WhatsApp" v={valor.whatsapp} onEdit={() => onEditar('dados')}/>

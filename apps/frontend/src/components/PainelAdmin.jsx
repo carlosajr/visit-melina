@@ -75,9 +75,9 @@ export function PainelAdmin({ onVoltarHome }) {
   };
 
   const exportarCSV = () => {
-    const cabecalho = ['Tipo', 'Data', 'Horário', 'Nome', 'WhatsApp', 'E-mail', 'Acompanhantes', 'Convite GCal', 'Criado em'];
+    const cabecalho = ['Data', 'Horário', 'Nome', 'WhatsApp', 'E-mail', 'Acompanhantes', 'Convite GCal', 'Criado em'];
     const linhas = lista.map((a) => [
-      a.tipo, a.data, a.horario || '16:00', a.nome, a.whatsapp,
+      a.data, a.horario || '16:00', a.nome, a.whatsapp,
       a.email || '', (a.acompanhantes || []).join(' | '),
       a.inviteSent ? 'sim' : 'nao', a.criadoEm,
     ]);
@@ -203,10 +203,8 @@ export function PainelAdmin({ onVoltarHome }) {
         </>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 18 }}>
-            <StatCard label="Total" valor={lista.length} cor="var(--ink)"/>
-            <StatCard label="Amigos" valor={lista.filter((a) => a.tipo === 'amigo').length} cor="var(--rose-deep)"/>
-            <StatCard label="Família" valor={lista.filter((a) => a.tipo === 'familia').length} cor="var(--honey-deep)"/>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginBottom: 18 }}>
+            <StatCard label="Total de visitas" valor={lista.length} cor="var(--ink)"/>
           </div>
 
           <div className="vm-admin-card">
@@ -220,18 +218,13 @@ export function PainelAdmin({ onVoltarHome }) {
                 <table className="vm-table">
                   <thead>
                     <tr>
-                      <th>Tipo</th><th>Data</th><th>Nome</th><th>WhatsApp</th>
+                      <th>Data</th><th>Nome</th><th>WhatsApp</th>
                       <th>E-mail</th><th>Acomp.</th><th>GCal</th><th></th>
                     </tr>
                   </thead>
                   <tbody>
                     {[...lista].sort((a, b) => a.data.localeCompare(b.data)).map((a) => (
                       <tr key={a.id}>
-                        <td>
-                          <span className={`vm-pill ${a.tipo === 'amigo' ? 'is-amigo' : 'is-familia'}`}>
-                            {a.tipo === 'amigo' ? 'Amigo' : 'Família'}
-                          </span>
-                        </td>
                         <td style={{ fontWeight: 700 }}>
                           {formatarDataCurta(a.data)}
                           <span style={{ color: 'var(--honey-deep)', fontWeight: 800 }}> · {formatarHorario(a.horario || '16:00')}</span>

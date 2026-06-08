@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react';
 import { JardimRodape, VMBrand, IconFlower, IconCalendar, IconUser, IconHex, IconChev } from './components/Decoracao';
-import { StepTipoVisita } from './components/StepTipoVisita';
 import { StepEscolhaData } from './components/StepEscolhaData';
 import { StepDadosPessoais } from './components/StepDadosPessoais';
 import { StepAcompanhantes } from './components/StepAcompanhantes';
@@ -13,7 +12,6 @@ import { PainelAdmin } from './components/PainelAdmin';
 import { useAgendamentos } from './hooks/useAgendamentos';
 
 const RASCUNHO_VAZIO = {
-  tipo: '',
   data: '',
   horario: '',
   nome: '',
@@ -27,7 +25,7 @@ const RASCUNHO_VAZIO = {
 function App() {
   const ag = useAgendamentos();
   const [flow, setFlow] = useState('home');
-  const [novoStep, setNovoStep] = useState('tipo');
+  const [novoStep, setNovoStep] = useState('data');
   const [draft, setDraft] = useState(RASCUNHO_VAZIO);
   const [meuBusca, setMeuBusca] = useState('');
   const [meuAg, setMeuAg] = useState(null);
@@ -38,7 +36,7 @@ function App() {
 
   const irParaHome = () => {
     setFlow('home');
-    setNovoStep('tipo');
+    setNovoStep('data');
     setDraft(RASCUNHO_VAZIO);
     setMeuBusca('');
     setMeuAg(null);
@@ -49,7 +47,7 @@ function App() {
 
   const novoAgendamento = () => {
     setFlow('novo');
-    setNovoStep('tipo');
+    setNovoStep('data');
     setDraft(RASCUNHO_VAZIO);
   };
 
@@ -60,11 +58,6 @@ function App() {
     if (draft.editandoId && draft.dataOriginal) s.add(draft.dataOriginal);
     return s;
   }, [draft.editandoId, draft.dataOriginal]);
-
-  const handleSelectTipo = (tipo) => {
-    setDraft((d) => ({ ...d, tipo }));
-    setNovoStep('data');
-  };
 
   const handleSelectData = async (dataISO, horario = '16:00') => {
     setDraft((d) => ({ ...d, data: dataISO, horario }));
@@ -91,7 +84,6 @@ function App() {
     setErroSalvar('');
     try {
       const novo = await ag.criar({
-        tipo: draft.tipo,
         data: draft.data,
         horario: draft.horario || '16:00',
         nome: draft.nome.trim(),
@@ -121,7 +113,6 @@ function App() {
   const handleAlterarData = (agendamento) => {
     setDraft({
       ...RASCUNHO_VAZIO,
-      tipo: agendamento.tipo,
       data: agendamento.data,
       horario: agendamento.horario || '16:00',
       nome: agendamento.nome,
@@ -180,16 +171,12 @@ function App() {
 
   // flow === 'novo'
   const renderNovoStep = () => {
-    if (novoStep === 'tipo') {
-      return <StepTipoVisita valor={draft.tipo} onSelect={handleSelectTipo} onBack={irParaHome}/>;
-    }
     if (novoStep === 'data') {
       return (
         <StepEscolhaData
-          tipo={draft.tipo}
           valor={draft.data}
           onSelect={handleSelectData}
-          onBack={() => draft.editandoId ? setFlow('meu') : goStep('tipo')}
+          onBack={() => draft.editandoId ? setFlow('meu') : irParaHome()}
           datasOcupadas={ag.datasOcupadas}
           ignorarOcupacaoData={ignorarOcupacaoData}
           salvando={salvando}
@@ -226,8 +213,7 @@ function App() {
           onConfirmar={handleConfirmar}
           onBack={() => goStep('acompanhantes')}
           onEditar={(secao) => {
-            if (secao === 'tipo') goStep('tipo');
-            else if (secao === 'data') goStep('data');
+            if (secao === 'data') goStep('data');
             else if (secao === 'dados') goStep('dados');
             else if (secao === 'acompanhantes') goStep('acompanhantes');
           }}
@@ -274,7 +260,7 @@ function Home({ onNovo, onMeu, onAdmin }) {
           <span className="vm-choice-icon is-rose"><IconCalendar size={22} color="var(--rose-deep)"/></span>
           <span className="vm-choice-body">
             <span className="vm-choice-title">Quero agendar uma visita</span>
-            <span className="vm-choice-sub">Amigos no sábado · família no domingo</span>
+            <span className="vm-choice-sub">Visitas aos sábados</span>
           </span>
           <span className="vm-choice-chev"><IconChev color="var(--rose-deep)"/></span>
         </button>

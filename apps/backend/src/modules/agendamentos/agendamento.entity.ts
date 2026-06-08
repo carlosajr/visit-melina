@@ -6,8 +6,6 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-export type TipoVisita = 'amigo' | 'familia';
-
 // Índices únicos parciais: apenas entre agendamentos não-cancelados
 @Index('IDX_ag_data_ativo', ['data'], {
   where: '"cancelado_em" IS NULL',
@@ -21,9 +19,6 @@ export type TipoVisita = 'amigo' | 'familia';
 export class Agendamento {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-
-  @Column({ length: 10 })
-  tipo: TipoVisita;
 
   @Column({ length: 10 })
   data: string; // YYYY-MM-DD
