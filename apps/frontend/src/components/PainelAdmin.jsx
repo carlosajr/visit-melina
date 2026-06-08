@@ -143,14 +143,16 @@ export function PainelAdmin({ onVoltarHome }) {
               {googleStatus.conectado ? `📅 ${googleStatus.email}` : ''}
             </span>
           )}
-          {googleStatus && !googleStatus.conectado && (
+          {googleStatus && (
             <button
               className="vm-btn vm-btn-secondary"
               onClick={handleConectarGoogle}
               style={{ padding: '8px 12px', fontSize: 12.5 }}
-              title="Conectar Google Calendar para criar eventos automaticamente"
+              title={googleStatus.conectado
+                ? 'Reconectar o Google Calendar (gera um novo acesso — use se os eventos pararam de ser criados)'
+                : 'Conectar Google Calendar para criar eventos automaticamente'}
             >
-              <IconCalendar size={13} color="var(--ink)"/> Conectar Google
+              <IconCalendar size={13} color="var(--ink)"/> {googleStatus.conectado ? 'Reconectar Google' : 'Conectar Google'}
             </button>
           )}
           {tab === 'agendamentos' && (
