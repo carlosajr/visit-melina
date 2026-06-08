@@ -33,8 +33,13 @@ export function useSlots() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { carregar(); }, [carregar]);
 
+  // Lista apenas slots de hoje em diante, ordenados por data
   const slotsOrdenados = useCallback(() => {
-    return [...lista].sort((a, b) => a.iso.localeCompare(b.iso));
+    const hoje = new Date();
+    const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+    return lista
+      .filter((s) => s.iso >= hojeIso)
+      .sort((a, b) => a.iso.localeCompare(b.iso));
   }, [lista]);
 
   const criar = useCallback(async (iso, horario) => {
